@@ -1,2 +1,2 @@
 # Agri-Guard
-Digital solution to agricultural needs such as disease detection and custom-tailored advice.
+Submission for Neural Nexus'24, by team Double Trouble.
