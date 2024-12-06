@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech to Text</title>
+</head>
+<body>
+    <h1>Speech-to-Text Application</h1>
+
+    <!-- Buttons for controlling recording -->
+    <button id="startBtn" onclick="startRecording()">Start Recording</button>
+    <button id="stopBtn" onclick="stopRecording()" disabled>Stop Recording</button>
+    
+    <h3>Transcription:</h3>
+    <p id="transcription">None</p>
+
+    <script>
+        // Start recording request
+        function startRecording() {
+            fetch('/start_recording', { method: 'POST' })
+                .then(response => response.text())
+                .then(data => {
+                    console.log(data);
+                    document.getElementById('startBtn').disabled = true;
+                    document.getElementById('stopBtn').disabled = false;
+                });
+        }
+
+        // Stop recording request
+        function stopRecording() {
+            fetch('/stop_recording', { method: 'POST' })
+                .then(response => response.text())
+                .then(data => {
+                    console.log(data);
+                    document.getElementById('stopBtn').disabled = true;
+                    document.getElementById('startBtn').disabled = false;
+
+                    // Now fetch the transcription
+                    fetch('/transcribe', { method: 'POST' })
+                        .then(response => response.text())
+                        .then(data => {
+                            document.getElementById('transcription').innerText = data;
+                        });
+                });
+        }
+    </script>
+</body>
+</html>
