@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Results</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        /* Loading spinner styles */
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .loading-spinner i {
+            font-size: 30px;
+            animation: spin 1.5s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .standard-solutions {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            color: white;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 style="font-size: 5rem; color: #38B2AC;">🌱 AgriGuard</h1>
+            <p>Results and analysis of your plant image</p>
+        </div>
+        <div class="results-section">
+            <div class="disease-info">
+                <h2>🔎 Analysis Result: <span style="color: white">{{ model_output }}</span></h2>
+                
+                <!-- Standard Solutions Section -->
+                <div class="standard-solutions">
+                    <h3>🌿 Standard Treatment Solutions:</h3>
+                    <p>{{ standard_solutions }}</p>
+                </div>
+                <br/>
+                <p>Enter your questions below to learn more!</p>
+            </div>
+            
+            <!-- Chat History Section -->
+            <div id="chat-history" class="chat-history">
+                {% for message in chat_history %}
+                    {% if message.startswith('User:') %}
+                        <div class="message user">
+                            <p>{{ message }}</p>
+                        </div>
+                    {% else %}
+                        <div class="message bot">
+                            <p>{{ message['response']|safe }}</p>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            <!-- Loading spinner -->
+            <div class="loading-spinner" id="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i> Generating response...
+            </div>
+        </div>
+
+        <!-- Chat Form -->
+        <form id="chat-form" class="upload-form">
+            <input type="text" id="user-input" class="chat-input" placeholder="Type your message..." required>
+            <button type="submit" class="analyse-btn">Send</button>
+        </form>
+    </div>
+
+    <script>
+        // Apply animations
+        anime({
+            targets: '.header h1',
+            translateY: [-20, 0],
+            opacity: [0, 1],
+            duration: 1000,
+            delay: 200,
+            easing: 'easeOutExpo'
+        });
+
+        anime({
+            targets: '.header p',
+            translateY: [-10, 0],
+            opacity: [0, 1],
+            duration: 800,
+            delay: 400,
+            easing: 'easeOutExpo'
+        });
+
+        anime({
+            targets: '.results-section',
+            translateY: [20, 0],
+            opacity: [0, 1],
+            duration: 800,
+            delay: 600,
+            easing: 'easeOutExpo'
+        });
+
+        anime({
+            targets: '.chat-input',
+            translateY: [20, 0],
+            opacity: [0, 1],
+            duration: 800,
+            delay: 800,
+            easing: 'easeOutExpo'
+        });
+
+        // Fix animations for standard solutions
+        anime({
+            targets: '.standard-solutions',
+            translateY: [20, 0],
+            opacity: [0, 1],
+            duration: 800,
+            delay: 1000,
+            easing: 'easeOutExpo'
+        });
+
+        // Handle chat form submission
+        document.getElementById('chat-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const userInput = document.getElementById('user-input').value;
+            document.getElementById('user-input').value = ''; // Clear input field
+
+            // Show loading spinner
+            document.getElementById('loading-spinner').style.display = 'block';
+
+            fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ user_input: userInput })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const chatHistory = document.getElementById('chat-history');
+
+                // Append user message
+                const userMessage = document.createElement('div');
+                userMessage.classList.add('message', 'user');
+                userMessage.innerHTML = `<p>User: ${userInput}</p>`;
+                chatHistory.appendChild(userMessage);
+
+                // Append bot message
+                const botMessage = document.createElement('div');
+                botMessage.classList.add('message', 'bot');
+                botMessage.innerHTML = data.bot;
+                chatHistory.appendChild(botMessage);
+
+                // Hide loading spinner after response
+                document.getElementById('loading-spinner').style.display = 'none';
+
+                // Scroll to bottom of chat history
+                chatHistory.scrollTop = chatHistory.scrollHeight;
+            })
+            .catch(err => {
+                console.error('Error in chat:', err);
+                document.getElementById('loading-spinner').style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html>
