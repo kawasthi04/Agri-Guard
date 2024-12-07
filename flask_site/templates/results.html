@@ -24,6 +24,51 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        /* Chat form styles */
+        .upload-form {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .chat-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .mic-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+            background-color: #38B2AC;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: -1px;
+        }
+        .mic-btn:hover {
+            background-color: #2C7A7B;
+        }
+        .analyse-btn {
+            width: 120px;
+            height: 50px;
+            font-size: 18px;
+            font-weight: bold;
+            background-color: #4A5568;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .analyse-btn:hover {
+            background-color: #2D3748;
+        }
     </style>
 </head>
 <body>
@@ -49,15 +94,16 @@
                 {% endfor %}
             </div>
 
-            <!-- Loading spinner -->
             <div class="loading-spinner" id="loading-spinner">
                 <i class="fas fa-spinner fa-spin"></i> Generating response...
             </div>
         </div>
 
-        <!-- Chat Form -->
         <form id="chat-form" class="upload-form">
             <input type="text" id="user-input" class="chat-input" placeholder="Type your message..." required>
+            <button type="button" class="mic-btn" id="mic-btn">
+                <i class="fas fa-microphone"></i>
+            </button>
             <button type="submit" class="analyse-btn">Send</button>
         </form>
     </div>
@@ -123,13 +169,13 @@
                 // Append user message
                 const userMessage = document.createElement('div');
                 userMessage.classList.add('message', 'user');
-                userMessage.innerHTML = <p>User: ${userInput}</p>;
+                userMessage.innerHTML = `<p>User: ${userInput}</p>`;
                 chatHistory.appendChild(userMessage);
 
                 // Append structured bot response
                 const botMessage = document.createElement('div');
                 botMessage.classList.add('message', 'bot');
-                botMessage.innerHTML = <p>${data.bot}</p>;
+                botMessage.innerHTML = `<p>${data.bot}</p>`;
                 chatHistory.appendChild(botMessage);
 
                 // Hide loading spinner after response
@@ -141,6 +187,63 @@
                 console.error('Error in chat:', err);
                 document.getElementById('loading-spinner').style.display = 'none';
             });
+        });
+
+        // Microphone button logic
+        let isRecording = false;
+        let mediaRecorder;
+        let audioChunks = [];
+
+        document.getElementById('mic-btn').addEventListener('click', async () => {
+            const micButton = document.getElementById('mic-btn');
+            const userInput = document.getElementById('user-input');
+
+            if (!isRecording) {
+                micButton.innerHTML = '<i class="fas fa-stop"></i>';
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = (event) => {
+                        audioChunks.push(event.data);
+                    };
+
+                    mediaRecorder.onstop = async () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        const formData = new FormData();
+                        formData.append('audio', audioBlob);
+
+                        micButton.innerHTML = '<i class="fas fa-microphone"></i>';
+
+                        fetch('/speech-to-text', {
+                            method: 'POST',
+                            body: formData,
+                        })
+                            .then((response) => response.json())
+                            .then((data) => {
+                                if (data.transcription) {
+                                    userInput.value = data.transcription;
+                                } else {
+                                    alert('Could not transcribe audio.');
+                                }
+                            })
+                            .catch((error) => {
+                                console.error('Speech-to-text error:', error);
+                                alert('An error occurred while processing the audio.');
+                            });
+                    };
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                } catch (error) {
+                    console.error('Microphone access error:', error);
+                    alert('Could not access the microphone.');
+                }
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+            }
         });
     </script>
 </body>
